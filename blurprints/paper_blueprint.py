@@ -24,6 +24,8 @@ def post_paper():
       name: paper
       schema:
         properties:
+          id:
+            type: integer
           paper_publish_year:
             type: integer
           paper_title:
@@ -114,7 +116,38 @@ def get_papers():
       200:
         description: get papers successfully
         schema:
-          id: paper
+          id: papers
+          properties:
+            description:
+              type: string
+            response:
+              type: array
+              items:
+                properties:
+                  paper_id:
+                    type: integer
+                  paper_publish_year:
+                    type: integer
+                  paper_title:
+                    type: string
+                  paper_origin:
+                    type: string
+                  paper_link:
+                    type: string
+                  paper_authors:
+                    type: array
+                    items:
+                      type: string
+                  paper_tags:
+                    type: array
+                    items:
+                      type: string
+                  paper_attachment:
+                    type: string
+                  create_time:
+                    type: string
+                  update_time:
+                    type: string
     """
     papers = (
         Paper.query

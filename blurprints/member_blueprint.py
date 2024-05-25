@@ -22,7 +22,7 @@ def post_member():
       - in: body
         name: member
         schema:
-          id: member input
+          id: member_input
           properties:
             member_name:
               type: string
@@ -87,6 +87,8 @@ def get_members():
               type: array
               items:
                 properties:
+                  id:
+                    type: integer
                   member_name:
                     type: string
                   member_intro:
@@ -177,7 +179,7 @@ def patch_member(member_id):
       - in: body
         name: member
         schema:
-          id: member input
+          id: member_input
           properties:
             member_name:
               type: string

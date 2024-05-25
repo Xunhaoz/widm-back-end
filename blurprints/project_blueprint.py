@@ -22,67 +22,50 @@ def post_project():
     parameters:
       - in: body
         name: project
-        required: true
+        description: project information
         schema:
-          type: object
+          id: project_input
           properties:
             project_name:
               type: string
-              description: project name
             project_description:
               type: string
-              description: project description
-            project_icon:
-              type: string
-              description: project icon
             project_link:
               type: string
-              description: project link
             project_github:
               type: string
-              description: project github
             project_tags:
-              required: false
               type: array
               items:
                 type: string
-                description: project tags
     responses:
       200:
         description: post project successfully
         schema:
           id: project
-          type: object
           properties:
-            project_id:
-              type: integer
-              description: project id
-            project_name:
+            description:
               type: string
-              description: project name
-            project_description:
-              type: string
-              description: project description
-            project_icon:
-              type: string
-              description: project icon
-            project_link:
-              type: string
-              description: project link
-            project_github:
-              type: string
-              description: project github
-            project_tags:
-              type: array
-              items:
-                type: string
-                description: project tags
-            create_time:
-              type: string
-              description: create time
-            update_time:
-              type: string
-              description: update time
+            response:
+              properties:
+                id:
+                  type: integer
+                project_name:
+                  type: string
+                project_description:
+                  type: string
+                project_link:
+                  type: string
+                project_github:
+                  type: string
+                project_tags:
+                  type: array
+                  items:
+                    type: string
+                created_time:
+                  type: string
+                updated_time:
+                  type: string
       400:
         description: no ['project_name'] in json
     """
@@ -113,44 +96,33 @@ def get_projects():
         description: get projects successfully
         schema:
           id: projects
-          type: array
-          items:
-            type: object
-            properties:
-              project_id:
-                type: integer
-                description: project id
-              project_name:
-                type: string
-                description: project name
-              project_description:
-                type: string
-                description: project description
-              project_icon:
-                type: string
-                description: project icon
-              project_link:
-                type: string
-                description: project link
-              project_github:
-                type: string
-                description: project github
-              project_tags:
-                type: array
-                items:
-                  type: string
-                  description: project tags
-              create_time:
-                type: string
-                description: create time
-              update_time:
-                type: string
-                description: update time
-              member_image:
-                type: string
-                description: project icon
-      404:
-        description: project not found
+          properties:
+            description:
+              type: string
+            response:
+              type: array
+              items:
+                properties:
+                  id:
+                    type: integer
+                  project_name:
+                    type: string
+                  project_description:
+                    type: string
+                  project_link:
+                    type: string
+                  project_github:
+                    type: string
+                  project_tags:
+                    type: array
+                    items:
+                      type: string
+                  created_time:
+                    type: string
+                  updated_time:
+                    type: string
+                  member_image:
+                    type: string
     """
     projects = (
         Project.query
@@ -172,6 +144,39 @@ def get_projects():
     return Response.response('get projects successfully', projects_payload)
 
 
+@project_blueprint.route('<project_id>', methods=['DELETE'])
+def delete_projects(project_id):
+    """
+    delete project
+    ---
+    tags:
+      - project
+    parameters:
+      - in: path
+        name: project_id
+        type: integer
+        required: true
+    responses:
+      200:
+        description: delete project successfully
+        schema:
+          id: project
+      404:
+        description: project not found
+    """
+    project = Project.query.get(project_id)
+    if not project:
+        return Response.not_found("project not found")
+
+    project_icon = ProjectIcon.query.filter_by(project_id=project_id).first()
+    if project_icon:
+        os.remove(project_icon.icon_path)
+
+    db.session.delete(project)
+    db.session.commit()
+    return Response.response('delete project successfully', project.to_dict())
+
+
 @project_blueprint.route('<project_id>', methods=['PATCH'])
 def patch_project(project_id):
     """
@@ -182,33 +187,13 @@ def patch_project(project_id):
     parameters:
       - in: path
         name: project_id
+        type: integer
         required: true
-        schema:
-          type: integer
-          description: project id
       - in: body
         name: project
-        required: true
+        description: project information
         schema:
-          type: object
-          properties:
-            project_name:
-              type: string
-              description: project name
-            project_description:
-              type: string
-              description: project description
-            project_link:
-              type: string
-              description: project link
-            project_github:
-              type: string
-              description: project github
-            project_tags:
-              type: array
-              items:
-                type: string
-                description: project tags
+          id: project_input
     responses:
       200:
         description: patch project successfully
@@ -236,41 +221,6 @@ def patch_project(project_id):
     return Response.response('patch project successfully', project.to_dict())
 
 
-@project_blueprint.route('<project_id>', methods=['DELETE'])
-def delete_projects(project_id):
-    """
-    delete project
-    ---
-    tags:
-      - project
-    parameters:
-      - in: path
-        name: project_id
-        required: true
-        schema:
-          type: integer
-          description: project id
-    responses:
-      200:
-        description: delete project successfully
-        schema:
-          id: project
-      404:
-        description: project not found
-    """
-    project = Project.query.get(project_id)
-    if not project:
-        return Response.not_found("project not found")
-
-    project_icon = ProjectIcon.query.filter_by(project_id=project_id).first()
-    if project_icon:
-        os.remove(project_icon.icon_path)
-
-    db.session.delete(project)
-    db.session.commit()
-    return Response.response('delete project successfully', project.to_dict())
-
-
 @project_blueprint.route('<project_id>/project-icon', methods=['POST'])
 def post_project_icon(project_id):
     """
@@ -281,46 +231,40 @@ def post_project_icon(project_id):
     parameters:
       - in: path
         name: project_id
+        type: integer
         required: true
-        schema:
-          type: integer
-          description: project id
       - in: formData
         name: project_icon
         type: file
         required: true
-        description: project icon
     responses:
       200:
         description: post project icon successfully
         schema:
           id: project_icon
-          type: object
           properties:
-            project_id:
-              type: integer
-              description: project id
-            icon_uuid:
+            description:
               type: string
-              description: project icon uuid
-            icon_name:
-              type: string
-              description: project icon name
-            icon_path:
-              type: string
-              description: project icon path
-            create_time:
-              type: string
-              description: create time
-            update_time:
-              type: string
-              description: update time
+            response:
+              properties:
+                id:
+                  type: integer
+                project_id:
+                  type: integer
+                icon_uuid:
+                  type: string
+                icon_name:
+                  type: string
+                icon_path:
+                  type: string
+                created_time:
+                  type: string
+                updated_time:
+                  type: string
       400:
         description: no ['project_icon'] in files
       404:
         description: project not found
-      409:
-        description: only one image is allowed
     """
     if not api_input_check(['project_icon'], request.files):
         return Response.client_error("no ['project_icon'] in files")
@@ -359,41 +303,17 @@ def delete_project_icon(project_id, project_icon_uuid):
     parameters:
       - in: path
         name: project_id
+        type: integer
         required: true
-        schema:
-          type: integer
-          description: project id
       - in: path
         name: project_icon_uuid
+        type: string
         required: true
-        schema:
-          type: string
-          description: project icon uuid
     responses:
       200:
         description: delete project icon successfully
         schema:
           id: project_icon
-          type: object
-          properties:
-            project_id:
-              type: integer
-              description: project id
-            icon_uuid:
-              type: string
-              description: project icon uuid
-            icon_name:
-              type: string
-              description: project icon name
-            icon_path:
-              type: string
-              description: project icon path
-            create_time:
-              type: string
-              description: create time
-            update_time:
-              type: string
-              description: update time
       404:
         description: project not found
     """
@@ -421,19 +341,15 @@ def get_project_icon(project_id, project_icon_uuid):
     parameters:
       - in: path
         name: project_id
+        type: integer
         required: true
-        schema:
-          type: integer
-          description: project id
       - in: path
         name: project_icon_uuid
+        type: string
         required: true
-        schema:
-          type: string
-          description: project icon uuid
     responses:
       200:
-        description: project icon
+        description: get project icon successfully
       404:
         description: project not found
     """

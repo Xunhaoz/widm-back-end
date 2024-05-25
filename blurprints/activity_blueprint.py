@@ -69,7 +69,7 @@ def post_activity():
 @activity_blueprint.route('', methods=['GET'])
 def get_activities():
     """
-    put activity
+    get activity
     ---
     tags:
       - activity
