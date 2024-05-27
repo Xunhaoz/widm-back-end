@@ -136,7 +136,7 @@ def get_projects():
         if project_payload['project_tags']:
             project_payload['project_tags'] = json.loads(project_payload['project_tags'])
 
-        project_payload['member_image'] = project.project_icon.icon_uuid \
+        project_payload['project_icon'] = project.project_icon.icon_uuid \
             if project.project_icon else None
 
         projects_payload.append(project_payload)

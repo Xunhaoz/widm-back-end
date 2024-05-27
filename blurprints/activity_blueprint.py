@@ -77,7 +77,7 @@ def get_activities():
       200:
         description: get activities successfully
         schema:
-          id: activity
+          id: activities
           properties:
             description:
               type: string
@@ -91,6 +91,10 @@ def get_activities():
                     type: string
                   activity_sub_title:
                     type: string
+                  activity_image:
+                    type: array
+                    items:
+                      type: string
                   create_time:
                     type: string
                   update_time:

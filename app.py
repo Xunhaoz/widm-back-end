@@ -33,8 +33,8 @@ def create_app(status='development'):
         )
 
     with app.app_context():
-        if app.config['RESET_DB']:
-            db.drop_all()
+        # if app.config['RESET_DB']:
+        #     db.drop_all()
         db.create_all()
         db.session.commit()
 

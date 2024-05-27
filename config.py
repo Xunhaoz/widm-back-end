@@ -19,7 +19,7 @@ class DevelopmentConfig:
     }
 
     DEBUG = False
-    RESET_DB = True
+    RESET_DB = False
 
 
 class TestConfig:

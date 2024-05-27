@@ -44,6 +44,8 @@ def post_member():
                   type: string
                 member_intro:
                   type: string
+                member_character:
+                  type: string
                 create_time:
                   type: string
                 update_time:
@@ -95,6 +97,8 @@ def get_members():
                     type: string
                   member_image:
                     type: string
+                  member_character:
+                    type: string
                   create_time:
                     type: string
                   update_time:
@@ -135,19 +139,6 @@ def delete_member(member_id):
         description: delete member successfully
         schema:
           id: member
-          properties:
-            description:
-              type: string
-            response:
-              properties:
-                member_name:
-                  type: string
-                member_intro:
-                  type: string
-                create_time:
-                  type: string
-                update_time:
-                  type: string
       404:
         description: member_id not exist
     """
@@ -192,19 +183,6 @@ def patch_member(member_id):
         description: patch member successfully
         schema:
           id: member
-          properties:
-            description:
-              type: string
-            response:
-              properties:
-                member_name:
-                  type: string
-                member_intro:
-                  type: string
-                create_time:
-                  type: string
-                update_time:
-                  type: string
       400:
         description: no ['member_name', 'member_intro'] or content in form
       404:

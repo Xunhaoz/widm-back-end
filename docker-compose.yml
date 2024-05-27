@@ -6,3 +6,5 @@ services:
       context: .
     ports:
       - "5025:5025"
+    volumes:
+      - ./instance:/app/instance
