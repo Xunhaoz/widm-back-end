@@ -5,6 +5,7 @@ from blurprints.paper_blueprint import paper_blueprint
 from blurprints.member_blueprint import member_blueprint
 from blurprints.activity_blueprint import activity_blueprint
 from blurprints.project_blueprint import project_blueprint
+from blurprints.news_blueprint import news_blueprint
 
 from config import DevelopmentConfig, ProductionConfig, TestConfig
 from models.database import db
@@ -42,6 +43,7 @@ def create_app(status='development'):
     app.register_blueprint(member_blueprint, url_prefix='/member')
     app.register_blueprint(activity_blueprint, url_prefix='/activity')
     app.register_blueprint(project_blueprint, url_prefix='/project')
+    app.register_blueprint(news_blueprint, url_prefix='/news')
 
     Swagger(app)
     return app
