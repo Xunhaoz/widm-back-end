@@ -237,7 +237,7 @@ def get_news_images():
     return Response.response('get news images successfully', [ni.to_dict() for ni in news_images])
 
 
-@news_blueprint.route('/image/<image_uuid>', methods=['GET'])
+@news_blueprint.route('/image/<news_image_uuid>', methods=['GET'])
 def get_news_image(image_uuid):
     """
     get news image
@@ -246,7 +246,7 @@ def get_news_image(image_uuid):
       - news_image
     parameters:
       - in: path
-        name: image_uuid
+        name: news_image_uuid
         required: true
         type: string
     responses:
@@ -316,7 +316,7 @@ def post_news_image():
     return Response.response('post news image successfully', news_image.to_dict())
 
 
-@news_blueprint.route('/image/<image_uuid>', methods=['DELETE'])
+@news_blueprint.route('/image/<news_image_uuid>', methods=['DELETE'])
 def delete_news_image(image_uuid):
     """
     delete news image
@@ -325,7 +325,7 @@ def delete_news_image(image_uuid):
       - news_image
     parameters:
       - in: path
-        name: image_uuid
+        name: news_image_uuid
         required: true
         type: string
     responses:
