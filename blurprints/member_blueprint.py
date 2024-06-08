@@ -1,5 +1,6 @@
 import os
 from uuid import uuid4
+from pathlib import Path
 
 from models.member_model import db, Member, MemberImage
 from models.responses import Response
@@ -116,7 +117,7 @@ def get_members():
     for member in members:
         member_payload = member.to_dict()
         member_payload['member_image'] = member.member_image.image_uuid \
-            if member.member_image else None
+            if member.member_image else ""
         members_payload.append(member_payload)
 
     return Response.response('get members successfully', members_payload)
@@ -254,7 +255,7 @@ def post_member_image(member_id):
     image = request.files['image']
     image_uuid = uuid4().hex
     image_name = image.filename
-    image_path = f'./statics/images/{image_uuid}.{image_name.split(".")[-1]}'
+    image_path = Path().cwd() / f'statics/images/{image_uuid}.{image_name.split(".")[-1]}'
     image.save(image_path)
 
     member_image = MemberImage(

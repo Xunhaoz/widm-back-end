@@ -1,5 +1,6 @@
 import os
 from uuid import uuid4
+from pathlib import Path
 
 from models.news_model import db, News, NewsImage
 from models.responses import Response
@@ -10,7 +11,7 @@ from flask import Blueprint, request, send_file
 news_blueprint = Blueprint('news', __name__)
 
 
-@news_blueprint.route('/', methods=['GET'])
+@news_blueprint.route('', methods=['GET'])
 def get_newses():
     """
     get newses
@@ -88,7 +89,7 @@ def get_news(news_id):
     return Response.response('get news successfully', news.to_dict())
 
 
-@news_blueprint.route('/', methods=['POST'])
+@news_blueprint.route('', methods=['POST'])
 def post_news():
     """
     post news
@@ -238,7 +239,7 @@ def get_news_images():
 
 
 @news_blueprint.route('/image/<news_image_uuid>', methods=['GET'])
-def get_news_image(image_uuid):
+def get_news_image(news_image_uuid):
     """
     get news image
     ---
@@ -255,7 +256,7 @@ def get_news_image(image_uuid):
       404:
         description: news image not found
     """
-    news_image = NewsImage.query.filter_by(image_uuid=image_uuid).first()
+    news_image = NewsImage.query.filter_by(image_uuid=news_image_uuid).first()
     if not news_image:
         return Response.not_found('news image not found')
 
@@ -302,13 +303,13 @@ def post_news_image():
     image = request.files['image']
     image_uuid = uuid4().hex
     image_name = image.filename
-    image_path = f'./statics/images/{image_uuid}.{image_name.split(".")[-1]}'
+    image_path = Path().cwd() / f'statics/images/{image_uuid}.{image_name.split(".")[-1]}'
     image.save(image_path)
 
     news_image = NewsImage(
         image_uuid=image_uuid,
         image_name=image_name,
-        image_path=image_path
+        image_path=str(image_path)
     )
 
     db.session.add(news_image)

@@ -8,3 +8,4 @@ services:
       - "5025:5025"
     volumes:
       - ./instance:/app/instance
+      - ./statics:/app/statics

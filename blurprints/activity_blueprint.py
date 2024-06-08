@@ -1,5 +1,6 @@
 import os
 from uuid import uuid4
+from pathlib import Path
 
 from models.activity_model import db, Activity, ActivityImage
 from models.responses import Response
@@ -116,7 +117,7 @@ def get_activities():
         activity_payload = activity.to_dict()
         activity_payload['activity_image'] = [
             activity_image.image_uuid for activity_image in activity.activity_image
-        ] or None
+        ]
         activities_payload.append(activity_payload)
 
     return Response.response(
@@ -284,14 +285,14 @@ def post_activity_image(activity_id):
     image = request.files['image']
     image_uuid = uuid4().hex
     image_name = image.filename
-    image_path = f'./statics/images/{image_uuid}.{image_name.split(".")[-1]}'
+    image_path = Path().cwd() / f'statics/images/{image_uuid}.{image_name.split(".")[-1]}'
     image.save(image_path)
 
     activity_image = ActivityImage(
         activity_id=activity_id,
         image_uuid=image_uuid,
         image_name=image_name,
-        image_path=image_path,
+        image_path=str(image_path),
     )
     db.session.add(activity_image)
     db.session.commit()

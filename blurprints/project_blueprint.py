@@ -1,6 +1,7 @@
 import os
-from uuid import uuid4
 import json
+from uuid import uuid4
+from pathlib import Path
 
 from models.project_model import Project, ProjectIcon, db, ProjectTaskImage, ProjectTask
 from models.responses import Response
@@ -77,7 +78,8 @@ def post_project():
         project_description=request.json.get('project_description', None),
         project_link=request.json.get('project_link', None),
         project_github=request.json.get('project_github', None),
-        project_tags=json.dumps(request.json['project_tags']) if 'project_tags' in request.json else None,
+        project_tags=json.dumps(request.json['project_tags'])
+        if 'project_tags' in request.json else json.dumps([]),
     )
     db.session.add(project)
     db.session.commit()
@@ -137,7 +139,7 @@ def get_projects():
             project_payload['project_tags'] = json.loads(project_payload['project_tags'])
 
         project_payload['project_icon'] = project.project_icon.icon_uuid \
-            if project.project_icon else None
+            if project.project_icon else ""
 
         projects_payload.append(project_payload)
 
@@ -278,14 +280,14 @@ def post_project_icon(project_id):
     image = request.files['project_icon']
     icon_uuid = uuid4().hex
     icon_name = image.filename
-    icon_path = f'./statics/images/{icon_uuid}.{icon_name.split(".")[-1]}'
+    icon_path = Path().cwd() / f'statics/images/{icon_uuid}.{icon_name.split(".")[-1]}'
     image.save(icon_path)
 
     project_icon = ProjectIcon(
         project_id=project_id,
         icon_uuid=icon_uuid,
         icon_name=icon_name,
-        icon_path=icon_path
+        icon_path=str(icon_path)
     )
 
     db.session.add(project_icon)
@@ -469,13 +471,13 @@ def post_project_task_image():
     image = request.files['image']
     image_uuid = uuid4().hex
     image_name = image.filename
-    image_path = f'./statics/images/{image_uuid}.{image_name.split(".")[-1]}'
+    image_path = Path().cwd() / f'statics/images/{image_uuid}.{image_name.split(".")[-1]}'
     image.save(image_path)
 
     project_task_image = ProjectTaskImage(
         image_uuid=image_uuid,
         image_name=image_name,
-        image_path=image_path
+        image_path=str(image_path)
     )
 
     db.session.add(project_task_image)
@@ -549,6 +551,7 @@ class ProjectTaskTreeBuilder:
                     next_building_queue.append(child_id)
             building_queue = next_building_queue
 
+
 @project_blueprint.route('<project_id>/task', methods=['GET'])
 def get_project_tasks(project_id):
     """
@@ -613,8 +616,8 @@ def get_project_tasks(project_id):
 
     if not project_tasks:
         return Response.response(
-        'get project tasks successfully', []
-    )
+            'get project tasks successfully', []
+        )
 
     project_task_tree_builder = ProjectTaskTreeBuilder(project_tasks)
     return Response.response(

@@ -12,6 +12,7 @@ from models.database import db
 
 from flask import Flask, session, render_template
 from flasgger import Swagger
+from flask_cors import CORS
 
 
 def create_app(status='development'):
@@ -34,8 +35,7 @@ def create_app(status='development'):
         )
 
     with app.app_context():
-        # if app.config['RESET_DB']:
-        #     db.drop_all()
+        db.drop_all()
         db.create_all()
         db.session.commit()
 
@@ -46,6 +46,15 @@ def create_app(status='development'):
     app.register_blueprint(news_blueprint, url_prefix='/news')
 
     Swagger(app)
+    CORS(
+        app,
+        resources={
+            r"/*": {
+                "origins": "*", "allow_headers": "*", "expose_headers": "*"
+            }
+        },
+    )
+
     return app
 
 

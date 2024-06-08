@@ -1,6 +1,7 @@
 import os
 import json
 from uuid import uuid4
+from pathlib import Path
 
 from models.paper_model import db, Paper, PaperAttachment
 from models.responses import Response
@@ -166,7 +167,7 @@ def get_papers():
             paper_payload['paper_authors'] = json.loads(paper_payload['paper_authors'])
 
         paper_payload['paper_attachment'] = paper.paper_attachment.attachment_uuid \
-            if paper.paper_attachment else None
+            if paper.paper_attachment else ""
 
         papers_payload.append(paper_payload)
 
@@ -229,9 +230,9 @@ def patch_paper(paper_id):
     if 'paper_link' in request.json:
         paper.paper_link = request.json['paper_link']
     if 'paper_tags' in request.json:
-        paper.paper_link = json.dumps(request.json['paper_tags'])
+        paper.paper_tags = json.dumps(request.json['paper_tags'])
     if 'paper_authors' in request.json:
-        paper.paper_link = json.dumps(request.json['paper_authors'])
+        paper.paper_authors = json.dumps(request.json['paper_authors'])
 
     db.session.commit()
     return Response.response('update paper successfully', paper.to_dict())
@@ -346,13 +347,13 @@ def post_paper_attachment(paper_id):
     attachment = request.files['paper_attachment']
     attachment_uuid = uuid4().hex
     attachment_name = attachment.filename
-    attachment_path = f'./statics/attachments/{attachment_uuid}.{attachment_name.split(".")[-1]}'
+    attachment_path = Path().cwd() / f'statics/attachments/{attachment_uuid}.{attachment_name.split(".")[-1]}'
     attachment.save(attachment_path)
     paper_attachment = PaperAttachment(
         paper_id=paper_id,
         attachment_uuid=attachment_uuid,
         attachment_name=attachment_name,
-        attachment_path=attachment_path
+        attachment_path=str(attachment_path)
     )
 
     db.session.add(paper_attachment)
