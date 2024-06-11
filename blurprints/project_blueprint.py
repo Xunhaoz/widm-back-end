@@ -113,6 +113,8 @@ def get_projects():
                     type: string
                   project_link:
                     type: string
+                  project_icon:
+                    type: string
                   project_github:
                     type: string
                   project_tags:
@@ -725,6 +727,9 @@ def post_project_task(project_id):
     project_task_title, project_task_sub_title, project_task_content, parent_id = api_input_get(
         ['project_task_title', 'project_task_sub_title', 'project_task_content', 'parent_id'], request.json
     )
+
+    if not ProjectTask.query.get(parent_id):
+        return Response.not_found("parent project task not found")
 
     project_task = ProjectTask(
         project_id=project_id,

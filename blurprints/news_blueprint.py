@@ -67,18 +67,22 @@ def get_news(news_id):
         schema:
           id: news
           properties:
-            id:
-              type: integer
-            news_title:
+            description:
               type: string
-            news_sub_title:
-              type: string
-            news_content:
-              type: string
-            created_time:
-              type: string
-            updated_time:
-              type: string
+            response:
+              properties:
+                id:
+                  type: integer
+                news_title:
+                  type: string
+                news_sub_title:
+                  type: string
+                news_content:
+                  type: string
+                created_time:
+                  type: string
+                updated_time:
+                  type: string
       404:
         description: news not found
     """
