@@ -26,7 +26,7 @@ retrieval_blueprint = Blueprint('retrieval', __name__)
 
 scrapying_status = {
     # not start, pending, complete
-    'status': 'not start',
+    'status': 'complete',
     'start_time': '',
     'end_time': ''
 }
@@ -304,6 +304,7 @@ def chat_retrieval_augmented_generation():
 
     chroma = Chroma(persist_directory='instance/csie', embedding_function=embed_model)
     relevant_documents = chroma.search(query_string, 'mmr', k=10)
+    print(relevant_documents)
 
     messages = [
         {
