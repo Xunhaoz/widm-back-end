@@ -16,5 +16,5 @@ FROM install-requirements AS release
 WORKDIR /app
 COPY . .
 
-CMD ["gunicorn" , "-b", "0.0.0.0:5025", "app:app"]
+CMD ["python" , "app.py"]
 EXPOSE 5025

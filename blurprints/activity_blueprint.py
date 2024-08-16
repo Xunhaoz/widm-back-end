@@ -1,6 +1,7 @@
 import os
 from uuid import uuid4
 from pathlib import Path
+from datetime import datetime
 
 from models.activity_model import db, Activity, ActivityImage
 from models.responses import Response
@@ -20,17 +21,20 @@ def post_activity():
     tags:
       - activity
     parameters:
-    - in: body
-      name: activity
-      schema:
-        required:
-          - activity_title
-          - activity_sub_title
-        properties:
-          activity_title:
-            type: string
-          activity_sub_title:
-            type: string
+      - in: body
+        name: activity
+        schema:
+          id: activity_input
+          properties:
+            title:
+              example: title
+              type: string
+            sub_title:
+              example: sub_title
+              type: string
+            date:
+              example: '2024-01-01'
+              type: string
     responses:
       200:
         description: post activity successfully
@@ -42,25 +46,35 @@ def post_activity():
             response:
               properties:
                 id:
+                  example: 1
                   type: integer
-                activity_title:
+                title:
+                  example: title
                   type: string
-                activity_sub_title:
+                sub_title:
+                  example: sub_title
                   type: string
+                images:
+                  example: [1,2,3]
+                  type: array
                 create_time:
+                  example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                   type: string
                 update_time:
+                  example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                   type: string
       400:
         description: no ['activity_title', 'activity_sub_title'] or content in form
     """
-    if not api_input_check(['activity_title', 'activity_sub_title'], request.json):
-        return Response.client_error("no ['activity_title', 'activity_sub_title'] in form")
+    if not api_input_check(['title', 'sub_title', 'date'], request.json):
+        return Response.client_error("no ['title', 'sub_title', 'date'] in form")
 
-    activity_title, activity_sub_title = api_input_get(['activity_title', 'activity_sub_title'], request.json)
+    title, sub_title, date = api_input_get(['title', 'sub_title', 'date'], request.json)
+    date = datetime.strptime(date, '%Y-%m-%d')
     activity = Activity(
-        activity_title=activity_title,
-        activity_sub_title=activity_sub_title
+        title=title,
+        sub_title=sub_title,
+        date=date
     )
     db.session.add(activity)
     db.session.commit()
@@ -87,43 +101,31 @@ def get_activities():
               items:
                 properties:
                   id:
+                    example: 1
                     type: integer
-                  activity_title:
+                  title:
+                    example: title
                     type: string
-                  activity_sub_title:
+                  sub_title:
+                    example: sub_title
                     type: string
-                  activity_image:
+                  images:
+                    example: [1,2,3]
                     type: array
-                    items:
-                      type: string
+                  date:
+                    example: '2024-01-01'
+                    type: string
                   create_time:
+                    example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                     type: string
                   update_time:
+                    example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                     type: string
-                  activity_image:
-                    type: array
-                    items:
-                      type: string
       404:
         description: activity not exist
     """
-    activities = (
-        Activity.query
-        .options(joinedload(Activity.activity_image))
-    ).all()
-
-    activities_payload = []
-    for activity in activities:
-        activity_payload = activity.to_dict()
-        activity_payload['activity_image'] = [
-            activity_image.image_uuid for activity_image in activity.activity_image
-        ]
-        activities_payload.append(activity_payload)
-
-    return Response.response(
-        'get activities successfully',
-        activities_payload
-    )
+    activities = Activity.query.all()
+    return Response.response('get activities successfully', [activity.to_dict() for activity in activities])
 
 
 @activity_blueprint.route('<activity_id>', methods=['PATCH'])
@@ -141,36 +143,12 @@ def patch_activity(activity_id):
       - in: body
         name: activity
         schema:
-          required:
-            - activity_title
-            - activity_sub_title
-          properties:
-            activity_title:
-              type: string
-            activity_sub_title:
-              type: string
+          id: activity_input
     responses:
       200:
         description: patch activity successfully
         schema:
           id: activity
-          properties:
-            description:
-              type: string
-            response:
-              properties:
-                id:
-                  type: integer
-                activity_title:
-                  type: string
-                activity_sub_title:
-                  type: string
-                create_time:
-                  type: string
-                update_time:
-                  type: string
-      400:
-        description: no ['activity_title', 'activity_sub_title'] or content in form
       404:
         description: activity not exist
     """
@@ -178,11 +156,14 @@ def patch_activity(activity_id):
     if not activity:
         return Response.not_found('activity not exist')
 
-    if 'activity_title' in request.json:
-        activity.activity_title = request.json['activity_title']
+    if 'title' in request.json:
+        activity.title = request.json['title']
 
-    if 'activity_sub_title' in request.json:
-        activity.activity_sub_title = request.json['activity_sub_title']
+    if 'sub_title' in request.json:
+        activity.sub_title = request.json['sub_title']
+
+    if 'date' in request.json:
+        activity.date = datetime.strptime(request.json['date'], '%Y-%m-%d')
 
     db.session.commit()
     return Response.response('patch activity successfully', activity.to_dict())
@@ -205,30 +186,17 @@ def delete_activity(activity_id):
         description: delete activity successfully
         schema:
           id: activity
-          properties:
-            description:
-              type: string
-            response:
-              properties:
-                id:
-                  type: integer
-                activity_title:
-                  type: string
-                activity_sub_title:
-                  type: string
-                create_time:
-                  type: string
-                update_time:
-                  type: string
       404:
         description: activity not exist
     """
-    if not Activity.query.get(activity_id):
+    activity = Activity.query.get(activity_id)
+    if not activity:
         return Response.not_found('activity not exist')
 
-    activity = Activity.query.get(activity_id)
-    for activity_image in activity.activity_image:
+    activity_images = ActivityImage.query.filter_by(activity_id=activity_id).all()
+    for activity_image in activity_images:
         os.remove(activity_image.image_path)
+        db.session.delete(activity_image)
 
     db.session.delete(activity)
     db.session.commit()
@@ -255,22 +223,7 @@ def post_activity_image(activity_id):
       200:
         description: post activity image successfully
         schema:
-          id: activity_image
-          properties:
-            description:
-              type: string
-            response:
-              properties:
-                activity_id:
-                  type: integer
-                image_uuid:
-                  type: string
-                image_name:
-                  type: string
-                create_time:
-                  type: string
-                update_time:
-                  type: string
+          id: activity
       400:
         description: no ['image'] or content in form
       404:
@@ -279,7 +232,8 @@ def post_activity_image(activity_id):
     if not api_input_check(['image'], request.files):
         return Response.client_error("no ['image'] or content in form")
 
-    if not Activity.query.get(activity_id):
+    activity = Activity.query.get(activity_id)
+    if not activity:
         return Response.not_found('activity not exist')
 
     image = request.files['image']
@@ -290,17 +244,15 @@ def post_activity_image(activity_id):
 
     activity_image = ActivityImage(
         activity_id=activity_id,
-        image_uuid=image_uuid,
-        image_name=image_name,
-        image_path=str(image_path),
+        image_path=str(image_path)
     )
     db.session.add(activity_image)
     db.session.commit()
-    return Response.response('post activity image successfully', activity_image.to_dict())
+    return Response.response('post activity image successfully', activity.to_dict())
 
 
-@activity_blueprint.route('<activity_id>/activity-image/<activity_image_uuid>', methods=['GET'])
-def get_activity_image(activity_id, activity_image_uuid):
+@activity_blueprint.route('<activity_id>/activity-image/<image_id>', methods=['GET'])
+def get_activity_image(activity_id, image_id):
     """
     get activity image
     ---
@@ -312,7 +264,7 @@ def get_activity_image(activity_id, activity_image_uuid):
         type: integer
         required: true
       - in: path
-        name: activity_image_uuid
+        name: image_id
         type: string
         required: true
     responses:
@@ -324,15 +276,15 @@ def get_activity_image(activity_id, activity_image_uuid):
     if not Activity.query.get(activity_id):
         return Response.not_found('activity not exist')
 
-    activity_image = ActivityImage.query.filter_by(activity_id=activity_id, image_uuid=activity_image_uuid).first()
+    activity_image = ActivityImage.query.get(image_id)
     if not activity_image:
         return Response.not_found('activity image not exist')
 
     return send_file(activity_image.image_path)
 
 
-@activity_blueprint.route('<activity_id>/activity-image/<activity_image_uuid>', methods=['DELETE'])
-def delete_activity_image(activity_id, activity_image_uuid):
+@activity_blueprint.route('<activity_id>/activity-image/<image_id>', methods=['DELETE'])
+def delete_activity_image(activity_id, image_id):
     """
     delete activity image
     ---
@@ -344,40 +296,26 @@ def delete_activity_image(activity_id, activity_image_uuid):
         type: integer
         required: true
       - in: path
-        name: activity_image_uuid
+        name: image_id
         type: string
         required: true
     responses:
       200:
         description: delete activity image successfully
         schema:
-          id: activity_image
-          properties:
-            description:
-              type: string
-            response:
-              properties:
-                activity_id:
-                  type: integer
-                image_uuid:
-                  type: string
-                image_name:
-                  type: string
-                create_time:
-                  type: string
-                update_time:
-                  type: string
+          id: activity
       404:
         description: activity not exist or activity image not exist
     """
-    if not Activity.query.get(activity_id):
+    activity = Activity.query.get(activity_id)
+    if not activity:
         return Response.not_found('activity not exist')
 
-    activity_image = ActivityImage.query.filter_by(activity_id=activity_id, image_uuid=activity_image_uuid).first()
+    activity_image = ActivityImage.query.get(image_id)
     if not activity_image:
         return Response.not_found('activity image not exist')
 
     os.remove(activity_image.image_path)
     db.session.delete(activity_image)
     db.session.commit()
-    return Response.response('delete activity image successfully', activity_image.to_dict())
+    return Response.response('delete activity image successfully', activity.to_dict())

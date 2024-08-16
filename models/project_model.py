@@ -1,42 +1,61 @@
 from models.database import *
+from json import dumps, loads
 
 
 class Project(db.Model, SchemaMixin):
     __tablename__ = 'project'
-    project_name = db.Column(db.String(255), nullable=True)
-    project_description = db.Column(db.String(255), nullable=True)
-    project_link = db.Column(db.String(255), nullable=True)
-    project_github = db.Column(db.String(255), nullable=True)
-    project_tags = db.Column(db.String(255), nullable=True)
+    name = db.Column(db.String(50), nullable=True)
+    description = db.Column(db.TEXT, nullable=True)
+    tags = db.Column(db.TEXT, nullable=True)
+    link = db.Column(db.String(255), nullable=True)
+    icon_path = db.Column(db.String(255), nullable=True)
+    github = db.Column(db.String(255), nullable=True)
+    members = db.Column(db.TEXT, nullable=True)
 
-    project_icon = db.relationship(
-        'ProjectIcon', backref='member', lazy='select', uselist=False, cascade="all, delete-orphan"
-    )
     project_task = db.relationship(
         'ProjectTask', backref='member', lazy='select', cascade="all, delete-orphan"
     )
 
+    def to_dict(self):
+        self.tags = loads(self.tags)
+        self.members = loads(self.members)
 
-class ProjectIcon(db.Model, SchemaMixin):
-    __tablename__ = 'project_icon'
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id', ondelete="CASCADE"), unique=True)
-    icon_uuid = db.Column(db.String(255))
-    icon_name = db.Column(db.String(255))
-    icon_path = db.Column(db.String(255))
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'tags': self.tags,
+            'link': self.link,
+            'github': self.github,
+            'members': self.members,
+            'create_time': self.create_time,
+            'update_time': self.update_time,
+        }
 
 
 class ProjectTask(db.Model, SchemaMixin):
     __tablename__ = 'project_task'
+    title = db.Column(db.String(255))
+    sub_title = db.Column(db.Text)
+    members = db.Column(db.Text)
+    content = db.Column(db.Text)
+    papers = db.Column(db.Text)
     project_id = db.Column(db.Integer, db.ForeignKey('project.id', ondelete="CASCADE"))
     parent_id = db.Column(db.Integer, nullable=True)
-    project_task_title = db.Column(db.String(255))
-    project_task_sub_title = db.Column(db.String(255))
-    project_task_content = db.Column(db.Text)
 
+    def to_dict(self):
+        self.members = loads(self.members)
+        self.papers = loads(self.papers)
 
-
-class ProjectTaskImage(db.Model, SchemaMixin):
-    __tablename__ = 'project_task_image'
-    image_uuid = db.Column(db.String(255))
-    image_name = db.Column(db.String(255))
-    image_path = db.Column(db.String(255))
+        return {
+            'id': self.id,
+            'title': self.title,
+            'sub_title': self.sub_title,
+            'members': self.members,
+            'content': self.content,
+            'papers': self.papers,
+            'project_id': self.project_id,
+            'parent_id': self.parent_id,
+            'create_time': self.create_time,
+            'update_time': self.update_time,
+        }

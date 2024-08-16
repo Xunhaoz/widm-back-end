@@ -2,8 +2,9 @@ import os
 import json
 from uuid import uuid4
 from pathlib import Path
+from json import dumps
 
-from models.project_model import Project, ProjectIcon, db, ProjectTaskImage, ProjectTask
+from models.project_model import Project, db, ProjectTask
 from models.responses import Response
 from utiles.api_helper import *
 
@@ -27,18 +28,24 @@ def post_project():
         schema:
           id: project_input
           properties:
-            project_name:
+            name:
+              example: name
               type: string
-            project_description:
+            description:
+              example: description
               type: string
-            project_link:
-              type: string
-            project_github:
-              type: string
-            project_tags:
+            tags:
+              example: ['tag1', 'tag2']
               type: array
-              items:
-                type: string
+            link:
+              example: 'http://www.example.com'
+              type: string
+            github:
+              example: 'http://www.example.com'
+              type: string
+            members:
+              example: ['member1', 'member2']
+              type: array
     responses:
       200:
         description: post project successfully
@@ -51,35 +58,49 @@ def post_project():
               properties:
                 id:
                   type: integer
-                project_name:
+                name:
+                  example: name
                   type: string
-                project_description:
+                description:
+                  example: description
                   type: string
-                project_link:
-                  type: string
-                project_github:
-                  type: string
-                project_tags:
+                tags:
+                  example: ['tag1', 'tag2']
                   type: array
-                  items:
-                    type: string
+                link:
+                  example: 'http://www.example.com'
+                  type: string
+                github:
+                  example: 'http://www.example.com'
+                  type: string
+                members:
+                  example: ['member1', 'member2']
+                  type: array
                 created_time:
+                  example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                   type: string
                 updated_time:
+                  example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                   type: string
       400:
         description: no ['project_name'] in json
     """
-    if not api_input_check(['project_name'], request.json):
-        return Response.client_error("no ['project_name'] in json")
+    if not api_input_check(['name', 'description', 'tags', 'link', 'github', 'members'], request.json):
+        return Response.client_error("no ['name', 'description', 'tags', 'link', 'github', 'members'] in json")
+
+    name, description, tags, link, github, members = api_input_get(
+        ['name', 'description', 'tags', 'link', 'github', 'members'], request.json)
+
+    tags = dumps(tags)
+    members = dumps(members)
 
     project = Project(
-        project_name=request.json['project_name'],
-        project_description=request.json.get('project_description', None),
-        project_link=request.json.get('project_link', None),
-        project_github=request.json.get('project_github', None),
-        project_tags=json.dumps(request.json['project_tags'])
-        if 'project_tags' in request.json else json.dumps([]),
+        name=name,
+        description=description,
+        tags=tags,
+        link=link,
+        github=github,
+        members=members,
     )
     db.session.add(project)
     db.session.commit()
@@ -107,45 +128,60 @@ def get_projects():
                 properties:
                   id:
                     type: integer
-                  project_name:
+                  name:
+                    example: name
                     type: string
-                  project_description:
+                  description:
+                    example: description
                     type: string
-                  project_link:
-                    type: string
-                  project_icon:
-                    type: string
-                  project_github:
-                    type: string
-                  project_tags:
+                  tags:
+                    example: ['tag1', 'tag2']
                     type: array
-                    items:
-                      type: string
+                  link:
+                    example: 'http://www.example.com'
+                    type: string
+                  github:
+                    example: 'http://www.example.com'
+                    type: string
+                  members:
+                    example: ['member1', 'member2']
+                    type: array
                   created_time:
+                    example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                     type: string
                   updated_time:
-                    type: string
-                  member_image:
+                    example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                     type: string
     """
-    projects = (
-        Project.query
-        .options(joinedload(Project.project_icon))
-    ).all()
+    projects = Project.query.all()
+    return Response.response('get projects successfully', [project.to_dict() for project in projects])
 
-    projects_payload = []
-    for project in projects:
-        project_payload = project.to_dict()
 
-        if project_payload['project_tags']:
-            project_payload['project_tags'] = json.loads(project_payload['project_tags'])
+@project_blueprint.route('<project_id>', methods=['GET'])
+def get_project(project_id):
+    """
+    get project
+    ---
+    tags:
+      - project
+    parameters:
+      - in: path
+        name: project_id
+        type: integer
+        required: true
+    responses:
+      200:
+        description: get project successfully
+        schema:
+          id: project
+      404:
+        description: project not found
+    """
+    project = Project.query.get(project_id)
+    if not project:
+        return Response.not_found("project not found")
 
-        project_payload['project_icon'] = project.project_icon.icon_uuid \
-            if project.project_icon else ""
-
-        projects_payload.append(project_payload)
-
-    return Response.response('get projects successfully', projects_payload)
+    return Response.response('get project successfully', project.to_dict())
 
 
 @project_blueprint.route('<project_id>', methods=['DELETE'])
@@ -172,9 +208,8 @@ def delete_projects(project_id):
     if not project:
         return Response.not_found("project not found")
 
-    project_icon = ProjectIcon.query.filter_by(project_id=project_id).first()
-    if project_icon:
-        os.remove(project_icon.icon_path)
+    if project.icon_path:
+        os.remove(project.icon_path)
 
     db.session.delete(project)
     db.session.commit()
@@ -210,16 +245,18 @@ def patch_project(project_id):
     if not project:
         return Response.not_found("project not found")
 
-    if 'project_name' in request.json:
-        project.project_name = request.json['project_name']
-    if 'project_description' in request.json:
-        project.project_description = request.json['project_description']
-    if 'project_link' in request.json:
-        project.project_link = request.json['project_link']
-    if 'project_github' in request.json:
-        project.project_github = request.json['project_github']
-    if 'project_tags' in request.json:
-        project.project_tags = json.dumps(request.json['project_tags'])
+    if 'name' in request.json:
+        project.name = request.json['name']
+    if 'description' in request.json:
+        project.description = request.json['description']
+    if 'tags' in request.json:
+        project.tags = dumps(request.json['tags'])
+    if 'link' in request.json:
+        project.link = request.json['link']
+    if 'github' in request.json:
+        project.github = request.json['github']
+    if 'members' in request.json:
+        project.members = json.dumps(request.json['members'])
 
     db.session.commit()
     return Response.response('patch project successfully', project.to_dict())
@@ -231,125 +268,59 @@ def post_project_icon(project_id):
     post project icon
     ---
     tags:
-      - project_icon
+      - project
     parameters:
       - in: path
         name: project_id
         type: integer
         required: true
       - in: formData
-        name: project_icon
+        name: image
         type: file
         required: true
     responses:
       200:
         description: post project icon successfully
         schema:
-          id: project_icon
-          properties:
-            description:
-              type: string
-            response:
-              properties:
-                id:
-                  type: integer
-                project_id:
-                  type: integer
-                icon_uuid:
-                  type: string
-                icon_name:
-                  type: string
-                icon_path:
-                  type: string
-                created_time:
-                  type: string
-                updated_time:
-                  type: string
+          id: project
       400:
-        description: no ['project_icon'] in files
+        description: no ['image'] in files
       404:
         description: project not found
     """
-    if not api_input_check(['project_icon'], request.files):
-        return Response.client_error("no ['project_icon'] in files")
 
-    if not Project.query.get(project_id):
+    if not api_input_check(['image'], request.files):
+        return Response.client_error("no ['image'] in files")
+
+    project = Project.query.get(project_id)
+    if not project:
         Response.not_found("project not found")
 
-    if ProjectIcon.query.filter_by(project_id=project_id).first():
-        return Response.client_error("only one image is allowed")
+    if project.icon_path:
+        os.remove(project.icon_path)
 
-    image = request.files['project_icon']
+    image = request.files['image']
     icon_uuid = uuid4().hex
     icon_name = image.filename
     icon_path = Path().cwd() / f'statics/images/{icon_uuid}.{icon_name.split(".")[-1]}'
     image.save(icon_path)
+    project.icon_path = str(icon_path)
 
-    project_icon = ProjectIcon(
-        project_id=project_id,
-        icon_uuid=icon_uuid,
-        icon_name=icon_name,
-        icon_path=str(icon_path)
-    )
-
-    db.session.add(project_icon)
     db.session.commit()
-    return Response.response('post project icon successfully', project_icon.to_dict())
+    return Response.response('post project icon successfully', project.to_dict())
 
 
-@project_blueprint.route('<project_id>/project-icon/<project_icon_uuid>', methods=['DELETE'])
-def delete_project_icon(project_id, project_icon_uuid):
-    """
-    delete project icon
-    ---
-    tags:
-      - project_icon
-    parameters:
-      - in: path
-        name: project_id
-        type: integer
-        required: true
-      - in: path
-        name: project_icon_uuid
-        type: string
-        required: true
-    responses:
-      200:
-        description: delete project icon successfully
-        schema:
-          id: project_icon
-      404:
-        description: project not found
-    """
-    if not Project.query.get(project_id):
-        return Response.not_found("project not found")
-
-    project_icon = ProjectIcon.query.filter_by(icon_uuid=project_icon_uuid).first()
-    if not project_icon:
-        return Response.not_found("project icon not found")
-
-    os.remove(project_icon.icon_path)
-    db.session.delete(project_icon)
-    db.session.commit()
-
-    return Response.response('delete project icon successfully', project_icon.to_dict())
-
-
-@project_blueprint.route('<project_id>/project-icon/<project_icon_uuid>', methods=['GET'])
-def get_project_icon(project_id, project_icon_uuid):
+@project_blueprint.route('<project_id>/project-icon', methods=['GET'])
+def get_project_icon(project_id):
     """
     get project icon
     ---
     tags:
-      - project_icon
+      - project
     parameters:
       - in: path
         name: project_id
         type: integer
-        required: true
-      - in: path
-        name: project_icon_uuid
-        type: string
         required: true
     responses:
       200:
@@ -357,165 +328,14 @@ def get_project_icon(project_id, project_icon_uuid):
       404:
         description: project not found
     """
-    if not Project.query.get(project_id):
+    project = Project.query.get(project_id)
+    if not project:
         return Response.not_found("project not found")
 
-    project_icon = ProjectIcon.query.filter_by(icon_uuid=project_icon_uuid).first()
-    if not project_icon:
+    if not project.icon_path:
         return Response.not_found("project icon not found")
 
-    return send_file(project_icon.icon_path)
-
-
-@project_blueprint.route('/task/image', methods=['GET'])
-def get_project_task_images():
-    """
-    get project task images
-    ---
-    tags:
-      - project_task_image
-    responses:
-      200:
-        description: get project task images successfully
-        schema:
-          id: project_task_images
-          properties:
-            description:
-              type: string
-            response:
-              type: array
-              items:
-                properties:
-                  id:
-                    type: integer
-                  image_uuid:
-                    type: string
-                  image_name:
-                    type: string
-                  image_path:
-                    type: string
-                  created_time:
-                    type: string
-                  updated_time:
-                    type: string
-      404:
-        description: project task images not found
-    """
-    project_task_images = ProjectTaskImage.query.all()
-    return Response.response(
-        'get project task images successfully',
-        [project_task_image.to_dict() for project_task_image in project_task_images]
-    )
-
-
-@project_blueprint.route('/task/image/<project_task_image_uuid>', methods=['GET'])
-def get_project_task_image(project_task_image_uuid):
-    """
-    get project task image
-    ---
-    tags:
-      - project_task_image
-    parameters:
-      - in: path
-        name: project_task_image_uuid
-        type: string
-        required: true
-    responses:
-      200:
-        description: get project task image successfully
-      404:
-        description: project task image not found
-    """
-    project_task_image = ProjectTaskImage.query.filter_by(image_uuid=project_task_image_uuid).first()
-    if not project_task_image:
-        return Response.not_found("project task image not found")
-
-    return send_file(project_task_image.image_path)
-
-
-@project_blueprint.route('/task/image', methods=['POST'])
-def post_project_task_image():
-    """
-    post project task image
-    ---
-    tags:
-      - project_task_image
-    parameters:
-      - in: formData
-        name: image
-        type: file
-        required: true
-    responses:
-      200:
-        description: post project task image successfully
-        schema:
-          id: project_task_image
-          properties:
-            description:
-              type: string
-            response:
-              properties:
-                id:
-                  type: integer
-                image_uuid:
-                  type: string
-                image_name:
-                  type: string
-                image_path:
-                  type: string
-                created_time:
-                  type: string
-                updated_time:
-                  type: string
-      400:
-        description: no ['image'] in files
-    """
-    image = request.files['image']
-    image_uuid = uuid4().hex
-    image_name = image.filename
-    image_path = Path().cwd() / f'statics/images/{image_uuid}.{image_name.split(".")[-1]}'
-    image.save(image_path)
-
-    project_task_image = ProjectTaskImage(
-        image_uuid=image_uuid,
-        image_name=image_name,
-        image_path=str(image_path)
-    )
-
-    db.session.add(project_task_image)
-    db.session.commit()
-    return Response.response('post project task image successfully', project_task_image.to_dict())
-
-
-@project_blueprint.route('/task/image/<project_task_image_uuid>', methods=['DELETE'])
-def delete_project_task_image(project_task_image_uuid):
-    """
-    delete project task image
-    ---
-    tags:
-      - project_task_image
-    parameters:
-      - in: path
-        name: project_task_image_uuid
-        type: string
-        required: true
-    responses:
-      200:
-        description: delete project task image successfully
-        schema:
-          id: project_task_image
-      404:
-        description: project task image not found
-    """
-    project_task_image = ProjectTaskImage.query.filter_by(image_uuid=project_task_image_uuid).first()
-    if not project_task_image:
-        return Response.not_found("project task image not found")
-
-    os.remove(project_task_image.image_path)
-    db.session.delete(project_task_image)
-    db.session.commit()
-
-    return Response.response('delete project task image successfully', project_task_image.to_dict())
+    return send_file(project.icon_path)
 
 
 class ProjectTaskTreeBuilder:
@@ -654,16 +474,28 @@ def get_project_task(project_id, project_task_id):
             response:
               properties:
                 id:
+                  example: 1
                   type: integer
+                title:
+                  example: title
+                  type: string
+                sub_title:
+                  example: sub_title
+                  type: string
+                members:
+                  example: ['member1', 'member2']
+                  type: array
+                content:
+                  example: content
+                  type: string
+                papers:
+                  example: ['paper1', 'paper2']
+                  type: array
                 project_id:
+                  example: 1
                   type: integer
-                project_task_title:
-                  type: string
-                project_task_sub_title:
-                  type: string
-                project_task_content:
-                  type: string
                 parent_id:
+                  example: 1
                   type: integer
                 created_time:
                   type: string
@@ -686,6 +518,8 @@ def get_project_task(project_id, project_task_id):
 def post_project_task(project_id):
     """
     post project task
+    if this task is a child task, parent_id should be set to the parent task id
+    if not parent_id should be set to 0
     ---
     tags:
       - project_task
@@ -700,13 +534,23 @@ def post_project_task(project_id):
         schema:
           id: project_task_input
           properties:
-            project_task_title:
+            title:
+              example: title
               type: string
-            project_task_sub_title:
+            sub_title:
+              example: sub_title
               type: string
-            project_task_content:
+            members:
+              example: ['member1', 'member2']
+              type: array
+            content:
+              example: content
               type: string
+            papers:
+              example: ['paper1', 'paper2']
+              type: array
             parent_id:
+              example: 0
               type: integer
     responses:
       200:
@@ -719,24 +563,26 @@ def post_project_task(project_id):
     if not Project.query.get(project_id):
         return Response.not_found("project not found")
 
-    if not api_input_check(['project_task_title', 'project_task_sub_title', 'project_task_content', 'parent_id'],
-                           request.json):
+    if not api_input_check([
+        'title', 'sub_title', 'members', 'content', 'papers', 'parent_id'
+    ], request.json):
         return Response.client_error(
-            "no ['project_task_title', 'project_task_sub_title', 'project_task_content', 'parent_id'] in json")
+            "no ['title', 'sub_title', 'members', 'content', 'papers', 'parent_id'] in json")
 
-    project_task_title, project_task_sub_title, project_task_content, parent_id = api_input_get(
-        ['project_task_title', 'project_task_sub_title', 'project_task_content', 'parent_id'], request.json
+    title, sub_title, members, content, papers, parent_id = api_input_get(
+        ['title', 'sub_title', 'members', 'content', 'papers', 'parent_id'], request.json
     )
-
-    if not (parent_id == 0 or ProjectTask.query.get(parent_id)):
-        return Response.not_found("parent project task not found")
+    members = dumps(members)
+    papers = dumps(papers)
 
     project_task = ProjectTask(
+        title=title,
+        sub_title=sub_title,
+        members=members,
+        content=content,
+        papers=papers,
         project_id=project_id,
-        project_task_title=project_task_title,
-        project_task_sub_title=project_task_sub_title,
-        project_task_content=project_task_content,
-        parent_id=parent_id
+        parent_id=parent_id,
     )
 
     db.session.add(project_task)
@@ -780,12 +626,18 @@ def patch_project_task(project_id, project_task_id):
     if not project_task:
         return Response.not_found("project task not found")
 
-    if 'project_task_title' in request.json:
-        project_task.project_task_title = request.json['project_task_title']
-    if 'project_task_sub_title' in request.json:
-        project_task.project_task_sub_title = request.json['project_task_sub_title']
-    if 'project_task_content' in request.json:
-        project_task.project_task_content = request.json['project_task_content']
+    if 'title' in request.json:
+        project_task.title = request.json['title']
+    if 'sub_title' in request.json:
+        project_task.sub_title = request.json['sub_title']
+    if 'members' in request.json:
+        project_task.members = dumps(request.json['members'])
+    if 'content' in request.json:
+        project_task.content = request.json['content']
+    if 'papers' in request.json:
+        project_task.papers = dumps(request.json['papers'])
+    if 'project_id' in request.json:
+        project_task.project_id = request.json['project_id']
     if 'parent_id' in request.json:
         project_task.parent_id = request.json['parent_id']
 

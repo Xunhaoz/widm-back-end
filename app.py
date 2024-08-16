@@ -1,13 +1,17 @@
+from pathlib import Path
 import uuid
-import logging
+import pymysql
 
-from blurprints.paper_blueprint import paper_blueprint
 from blurprints.member_blueprint import member_blueprint
+from blurprints.image_blueprint import image_blueprint
 from blurprints.activity_blueprint import activity_blueprint
+from blurprints.paper_blueprint import paper_blueprint
 from blurprints.project_blueprint import project_blueprint
+from blurprints.retrieval_blueprint import retrieval_blueprint
 from blurprints.news_blueprint import news_blueprint
+from blurprints.auth_blueprint import auth_blueprint
 
-from config import DevelopmentConfig, ProductionConfig, TestConfig
+from config import Config
 from models.database import db
 
 from flask import Flask, session, render_template
@@ -18,32 +22,17 @@ from flask_cors import CORS
 def create_app(status='development'):
     app = Flask(__name__)
     app.secret_key = uuid.uuid4().hex
-
-    if status == 'development':
-        app.config.from_object(DevelopmentConfig)
-    elif status == 'testing':
-        app.config.from_object(TestConfig)
-    elif status == 'production':
-        app.config.from_object(ProductionConfig)
-
+    app.config.from_object(Config)
     db.init_app(app)
 
-    if app.config['DEBUG']:
-        logging.basicConfig(
-            filename=app.config['LOGGING_FILENAME'], level=app.config['LOGGING_LEVEL'],
-            format=app.config['LOGGING_FORMAT']
-        )
-
-    with app.app_context():
-        # db.drop_all()
-        db.create_all()
-        db.session.commit()
-
-    app.register_blueprint(paper_blueprint, url_prefix='/paper')
     app.register_blueprint(member_blueprint, url_prefix='/member')
+    app.register_blueprint(image_blueprint, url_prefix='/image')
     app.register_blueprint(activity_blueprint, url_prefix='/activity')
+    app.register_blueprint(paper_blueprint, url_prefix='/paper')
     app.register_blueprint(project_blueprint, url_prefix='/project')
+    app.register_blueprint(retrieval_blueprint, url_prefix='/retrieval')
     app.register_blueprint(news_blueprint, url_prefix='/news')
+    app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
     Swagger(app)
     CORS(
@@ -61,4 +50,6 @@ def create_app(status='development'):
 app = create_app()
 
 if __name__ == '__main__':
+    Path('statics/images').mkdir(parents=True, exist_ok=True)
+    Path('statics/attachments').mkdir(parents=True, exist_ok=True)
     app.run(host=app.config['HOST'], port=app.config['PORT'])

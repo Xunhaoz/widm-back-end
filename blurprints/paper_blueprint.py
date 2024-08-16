@@ -1,9 +1,10 @@
 import os
-import json
+from json import dumps, loads
 from uuid import uuid4
 from pathlib import Path
+from datetime import datetime
 
-from models.paper_model import db, Paper, PaperAttachment
+from models.paper_model import db, Paper
 from models.responses import Response
 from utiles.api_helper import api_input_get, api_input_check
 
@@ -21,31 +22,35 @@ def post_paper():
     tags:
       - paper
     parameters:
-    - in: body
-      name: paper
-      schema:
-        properties:
-          id:
-            type: integer
-          paper_publish_year:
-            type: integer
-          paper_title:
-            type: string
-          paper_origin:
-            type: string
-          paper_link:
-            required: false
-            type: string
-          paper_authors:
-            required: false
-            type: array
-            items:
+      - in: body
+        name: paper
+        schema:
+          id: paper_input
+          properties:
+            title:
+              example: "title"
               type: string
-          paper_tags:
-            required: false
-            type: array
-            items:
+            sub_title:
+              example: "sub_title"
               type: string
+            authors:
+              example: ["author1", "author2"]
+              type: array
+            tags:
+              example: ["tag1", "tag2"]
+              type: array
+            publish_year:
+              example: '2021-01'
+              type: string
+            origin:
+              example: Space Weather
+              type: string
+            link:
+              example: "https://www.spaceweather.com"
+              type: string
+            types:
+              example: ["type1", "type2"]
+              type: array
     responses:
       200:
         description: post paper successfully
@@ -58,48 +63,70 @@ def post_paper():
             response:
               type: object
               properties:
-                paper_id:
+                id:
+                  example: 1
                   type: integer
-                paper_publish_year:
-                  type: integer
-                paper_title:
+                title:
+                  example: "title"
                   type: string
-                paper_origin:
+                sub_title:
+                  example: "sub_title"
                   type: string
-                paper_link:
-                  type: string
-                paper_authors:
+                authors:
+                  example: ["author1", "author2"]
                   type: array
-                  items:
-                    type: string
-                paper_tags:
+                tags:
+                  example: ["tag1", "tag2"]
                   type: array
-                  items:
-                    type: string
-                update_time:
+                publish_year:
+                  example: '2021-01'
                   type: string
+                origin:
+                  example: Space Weather
+                  type: string
+                link:
+                  example: "https://www.spaceweather.com"
+                  type: string
+                types:
+                  example: ["type1", "type2"]
+                  type: array
+                attachment_existed:
+                  example: false
+                  type: boolean
                 create_time:
+                  example: 'Tue, 06 Aug 2024 10:39:27 GMT'
+                  type: string
+                update_time:
+                  example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                   type: string
       400:
         description: no ['paper_publish_year', 'paper_title', 'paper_origin', 'paper_attachment', 'paper_link'] or content in form
     """
     if not api_input_check(
-            ['paper_publish_year', 'paper_title', 'paper_origin'], request.json
+            ['title', 'sub_title', 'authors', 'tags', 'publish_year', 'origin', 'link', 'types'], request.json
     ):
         return Response.client_error(
-            "no ['paper_publish_year', 'paper_title', 'paper_origin', 'paper_attachment', 'paper_link'] or content in form"
+            "no ['title', 'sub_title', 'authors', 'tags', 'publish_year', 'origin', 'link', 'types'] or content in form"
         )
 
-    paper_publish_year, paper_title, paper_origin = api_input_get(
-        ['paper_publish_year', 'paper_title', 'paper_origin'], request.json
+    title, sub_title, authors, tags, publish_year, origin, link, types = api_input_get(
+        ['title', 'sub_title', 'authors', 'tags', 'publish_year', 'origin', 'link', 'types'], request.json
     )
+
+    authors = dumps(authors)
+    tags = dumps(tags)
+    publish_year = datetime.strptime(publish_year, '%Y-%m')
+    types = dumps(types)
+
     paper = Paper(
-        paper_publish_year=paper_publish_year,
-        paper_title=paper_title,
-        paper_origin=paper_origin,
-        paper_link=request.json.get('project_description', None),
-        paper_tags=json.dumps(request.json['paper_tags']) if 'paper_tags' in request.json else None,
-        paper_authors=json.dumps(request.json['paper_authors']) if 'paper_authors' in request.json else None,
+        title=title,
+        sub_title=sub_title,
+        authors=authors,
+        tags=tags,
+        publish_year=publish_year,
+        origin=origin,
+        link=link,
+        types=types,
     )
     db.session.add(paper)
     db.session.commit()
@@ -125,53 +152,45 @@ def get_papers():
               type: array
               items:
                 properties:
-                  paper_id:
+                  id:
+                    example: 1
                     type: integer
-                  paper_publish_year:
-                    type: integer
-                  paper_title:
+                  title:
+                    example: "title"
                     type: string
-                  paper_origin:
+                  sub_title:
+                    example: "sub_title"
                     type: string
-                  paper_link:
-                    type: string
-                  paper_authors:
+                  authors:
+                    example: ["author1", "author2"]
                     type: array
-                    items:
-                      type: string
-                  paper_tags:
+                  tags:
+                    example: ["tag1", "tag2"]
                     type: array
-                    items:
-                      type: string
-                  paper_attachment:
+                  publish_year:
+                    example: '2021-01'
                     type: string
+                  origin:
+                    example: Space Weather
+                    type: string
+                  link:
+                    example: "https://www.spaceweather.com"
+                    type: string
+                  types:
+                    example: ["type1", "type2"]
+                    type: array
+                  attachment_existed:
+                    example: false
+                    type: boolean
                   create_time:
+                    example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                     type: string
                   update_time:
+                    example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                     type: string
     """
-    papers = (
-        Paper.query
-        .options(joinedload(Paper.paper_attachment))
-        .order_by(Paper.paper_publish_year.desc())
-    ).all()
-
-    papers_payload = []
-    for paper in papers:
-        paper_payload = paper.to_dict()
-
-        if paper_payload['paper_tags']:
-            paper_payload['paper_tags'] = json.loads(paper_payload['paper_tags'])
-
-        if paper_payload['paper_authors']:
-            paper_payload['paper_authors'] = json.loads(paper_payload['paper_authors'])
-
-        paper_payload['paper_attachment'] = paper.paper_attachment.attachment_uuid \
-            if paper.paper_attachment else ""
-
-        papers_payload.append(paper_payload)
-
-    return Response.response("get papers successfully", papers_payload)
+    papers = Paper.query.all()
+    return Response.response("get papers successfully", [paper.to_dict() for paper in papers])
 
 
 @paper_blueprint.route('<paper_id>', methods=['PATCH'])
@@ -187,28 +206,8 @@ def patch_paper(paper_id):
       type: integer
       required: true
     - in: body
-      name: paper
       schema:
-        properties:
-          paper_publish_year:
-            type: integer
-          paper_title:
-            type: string
-          paper_origin:
-            type: string
-          paper_link:
-            required: false
-            type: string
-          paper_authors:
-            required: false
-            type: array
-            items:
-              type: string
-          paper_tags:
-            required: false
-            type: array
-            items:
-              type: string
+        id: paper_input
     responses:
       200:
         description: update paper successfully
@@ -221,18 +220,22 @@ def patch_paper(paper_id):
     if not paper:
         return Response.not_found('paper not exist')
 
-    if 'paper_publish_year' in request.json:
-        paper.paper_publish_year = request.json['paper_publish_year']
-    if 'paper_title' in request.json:
-        paper.paper_title = request.json['paper_title']
-    if 'paper_origin' in request.json:
-        paper.paper_origin = request.json['paper_origin']
-    if 'paper_link' in request.json:
-        paper.paper_link = request.json['paper_link']
-    if 'paper_tags' in request.json:
-        paper.paper_tags = json.dumps(request.json['paper_tags'])
-    if 'paper_authors' in request.json:
-        paper.paper_authors = json.dumps(request.json['paper_authors'])
+    if 'title' in request.json:
+        paper.title = request.json['title']
+    if 'sub_title' in request.json:
+        paper.sub_title = request.json['sub_title']
+    if 'authors' in request.json:
+        paper.authors = dumps(request.json['authors'])
+    if 'tags' in request.json:
+        paper.tags = dumps(request.json['tags'])
+    if 'publish_year' in request.json:
+        paper.publish_year = datetime.strptime(request.json['publish_year'], '%Y-%m')
+    if 'origin' in request.json:
+        paper.origin = request.json['origin']
+    if 'link' in request.json:
+        paper.link = request.json['link']
+    if 'types' in request.json:
+        paper.types = dumps(request.json['types'])
 
     db.session.commit()
     return Response.response('update paper successfully', paper.to_dict())
@@ -255,23 +258,6 @@ def delete_paper(paper_id):
         description: delete paper successfully
         schema:
           id: paper
-          properties:
-            description:
-              type: string
-            response:
-              properties:
-                paper_publish_year:
-                  type: integer
-                paper_title:
-                  type: string
-                paper_origin:
-                  type: string
-                paper_link:
-                  type: string
-                create_time:
-                  type: string
-                update_time:
-                  type: string
       404:
         description: paper_id not exist
     """
@@ -279,9 +265,8 @@ def delete_paper(paper_id):
     if not paper:
         return Response.not_found('paper not exist')
 
-    paper_attachment = PaperAttachment.query.filter_by(paper_id=paper_id).first()
-    if paper_attachment:
-        os.remove(f'./statics/attachments/{paper_attachment.attachment_uuid}')
+    if paper.attachment_path:
+        os.remove(paper.attachment_path)
 
     db.session.delete(paper)
     db.session.commit()
@@ -294,88 +279,57 @@ def post_paper_attachment(paper_id):
     post paper attachment
     ---
     tags:
-      - paper_attachment
+      - paper
     parameters:
       - in: path
         name: paper_id
         type: integer
         required: true
       - in: formData
-        name: paper_attachment
+        name: attachment
         type: file
         required: true
     responses:
       200:
         description: post paper attachment successfully
         schema:
-          id: paper_attachment
-          type: object
-          properties:
-            description:
-              type: string
-            response:
-              type: object
-              properties:
-                attachment_id:
-                  type: integer
-                paper_id:
-                  type: integer
-                paper_path:
-                  type: integer
-                attachment_name:
-                  type: integer
-                attachment_uuid:
-                  type: string
-                create_time:
-                  type: string
-                update_time:
-                  type: string
+          id: paper
       400:
         description: no ['paper_attachment'] or content in form
       404:
         description: paper_id not exist
     """
-    if not api_input_check(['paper_attachment'], request.files):
-        return Response.client_error("no ['paper_attachment'] or content in form")
+    if not api_input_check(['attachment'], request.files):
+        return Response.client_error("no ['attachment'] or content in form")
 
-    if not Paper.query.get(paper_id):
+    paper = Paper.query.get(paper_id)
+    if not paper:
         return Response.not_found('paper not exist')
 
-    if PaperAttachment.query.filter_by(paper_id=paper_id).first():
-        return Response.client_error("only one attachment is allowed")
+    if paper.attachment_path:
+        os.remove(paper.attachment_path)
 
-    attachment = request.files['paper_attachment']
+    attachment = request.files['attachment']
     attachment_uuid = uuid4().hex
     attachment_name = attachment.filename
     attachment_path = Path().cwd() / f'statics/attachments/{attachment_uuid}.{attachment_name.split(".")[-1]}'
     attachment.save(attachment_path)
-    paper_attachment = PaperAttachment(
-        paper_id=paper_id,
-        attachment_uuid=attachment_uuid,
-        attachment_name=attachment_name,
-        attachment_path=str(attachment_path)
-    )
-
-    db.session.add(paper_attachment)
+    paper.attachment_path = attachment_path
     db.session.commit()
-    return Response.response('post paper attachment successfully', paper_attachment.to_dict())
+    return Response.response('post paper attachment successfully', paper.to_dict())
 
 
-@paper_blueprint.route('<paper_id>/paper-attachment/<paper_attachment_uuid>', methods=['GET'])
-def get_paper_attachment(paper_id, paper_attachment_uuid):
+@paper_blueprint.route('<paper_id>/paper-attachment', methods=['GET'])
+def get_paper_attachment(paper_id):
     """
     get paper attachment
     ---
     tags:
-      - paper_attachment
+      - paper
     parameters:
       - in: path
         name: paper_id
         type: integer
-        required: true
-      - in: path
-        name: paper_attachment_uuid
-        type: string
         required: true
     responses:
       200:
@@ -383,53 +337,15 @@ def get_paper_attachment(paper_id, paper_attachment_uuid):
       404:
         description: paper_id or paper_attachment_id not exist
     """
-    if not Paper.query.get(paper_id):
+    paper = Paper.query.get(paper_id)
+    if not paper:
         return Response.not_found('paper not exist')
 
-    paper_attachment = PaperAttachment.query.filter_by(paper_id=paper_id, attachment_uuid=paper_attachment_uuid).first()
-    if not paper_attachment:
+    if not paper.attachment_path:
         return Response.not_found('attachment not exist')
 
     return send_file(
-        paper_attachment.attachment_path,
+        paper.attachment_path,
         as_attachment=True,
-        download_name=paper_attachment.attachment_name
+        download_name=paper.title + Path(paper.attachment_path).suffix
     )
-
-
-@paper_blueprint.route('<paper_id>/paper-attachment/<paper_attachment_uuid>', methods=['DELETE'])
-def delete_paper_attachment(paper_id, paper_attachment_uuid):
-    """
-    delete paper attachment
-    ---
-    tags:
-      - paper_attachment
-    parameters:
-      - in: path
-        name: paper_id
-        type: integer
-        required: true
-      - in: path
-        name: paper_attachment_uuid
-        type: string
-        required: true
-    responses:
-      200:
-        description: delete attachment successfully
-        schema:
-          id: paper_attachment
-      404:
-        description: paper_id or paper_attachment_id not exist
-    """
-    if not Paper.query.get(paper_id):
-        return Response.not_found('paper not exist')
-
-    paper_attachment = PaperAttachment.query.filter_by(paper_id=paper_id, attachment_uuid=paper_attachment_uuid).first()
-    if not paper_attachment:
-        return Response.not_found('attachment not exist')
-
-    os.remove(paper_attachment.attachment_path)
-    db.session.delete(paper_attachment)
-    db.session.commit()
-
-    return Response.response('delete attachment successfully', paper_attachment.to_dict())

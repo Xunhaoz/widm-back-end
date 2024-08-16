@@ -8,7 +8,7 @@ import threading
 from langchain_community.document_loaders import WebBaseLoader, PyPDFLoader, Docx2txtLoader
 import requests
 from urllib import parse
-from flask import Blueprint, request, stream_with_context
+from flask import Blueprint, request, stream_with_context, current_app
 from flask import Response as FlaskResponse
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -18,6 +18,7 @@ from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 import shutil
+from config import Config
 
 from models.responses import Response
 from openai import OpenAI
@@ -33,11 +34,11 @@ scrapying_status = {
 
 embed_model = OpenAIEmbeddings(
     model="text-embedding-3-small",
-    api_key=""
+    api_key=Config.OPENAI_KEY
 )
 
 client = OpenAI(
-    api_key=""
+    api_key=Config.OPENAI_KEY
 )
 
 
