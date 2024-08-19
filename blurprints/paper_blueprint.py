@@ -113,9 +113,14 @@ def post_paper():
         ['title', 'sub_title', 'authors', 'tags', 'publish_year', 'origin', 'link', 'types'], request.json
     )
 
+
+    try:
+        publish_year = datetime.strptime(publish_year, '%Y-%m')
+    except ValueError:
+        return Response.client_error('publish_year format error')
+
     authors = dumps(authors)
     tags = dumps(tags)
-    publish_year = datetime.strptime(publish_year, '%Y-%m')
     types = dumps(types)
 
     paper = Paper(
@@ -206,6 +211,7 @@ def patch_paper(paper_id):
       type: integer
       required: true
     - in: body
+      name: paper
       schema:
         id: paper_input
     responses:
@@ -228,8 +234,11 @@ def patch_paper(paper_id):
         paper.authors = dumps(request.json['authors'])
     if 'tags' in request.json:
         paper.tags = dumps(request.json['tags'])
-    if 'publish_year' in request.json:
-        paper.publish_year = datetime.strptime(request.json['publish_year'], '%Y-%m')
+    if 'publish_year' in request.json and request.json['publish_year']:
+        try:
+            paper.publish_year = datetime.strptime(request.json['publish_year'], '%Y-%m')
+        except ValueError:
+            return Response.client_error('publish_year format error')
     if 'origin' in request.json:
         paper.origin = request.json['origin']
     if 'link' in request.json:
@@ -312,7 +321,7 @@ def post_paper_attachment(paper_id):
     attachment = request.files['attachment']
     attachment_uuid = uuid4().hex
     attachment_name = attachment.filename
-    attachment_path = Path().cwd() / f'statics/attachments/{attachment_uuid}.{attachment_name.split(".")[-1]}'
+    attachment_path = f'./statics/attachments/{attachment_uuid}.{attachment_name.split(".")[-1]}'
     attachment.save(attachment_path)
     paper.attachment_path = attachment_path
     db.session.commit()

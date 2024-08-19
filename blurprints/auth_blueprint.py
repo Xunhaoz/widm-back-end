@@ -1,8 +1,9 @@
 import requests
 from flask import Blueprint, current_app, request, make_response, redirect, jsonify
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, create_refresh_token, \
-    set_access_cookies, set_refresh_cookies, unset_access_cookies, unset_refresh_cookies, unset_jwt_cookies
+    set_access_cookies, set_refresh_cookies, unset_access_cookies, unset_refresh_cookies, get_jwt
 from sqlalchemy.orm import joinedload
+from datetime import datetime, timedelta, timezone
 
 auth_blueprint = Blueprint('auth', __name__)
 
@@ -119,3 +120,19 @@ def user_info():
         description: Return a client column not found message
     """
     return get_jwt_identity()
+
+
+@auth_blueprint.after_request
+def refresh_expiring_jwts(response):
+    if request.path == '/authentication/sign-out':
+        return response
+    try:
+        exp_timestamp = get_jwt()["exp"]
+        now = datetime.now(timezone.utc)
+        target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
+        if target_timestamp > exp_timestamp:
+            access_token = create_access_token(identity=get_jwt_identity())
+            set_access_cookies(response, access_token)
+        return response
+    except (RuntimeError, KeyError):
+        return response

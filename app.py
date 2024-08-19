@@ -17,6 +17,7 @@ from models.database import db
 from flask import Flask, session, render_template
 from flasgger import Swagger
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 
 
 def create_app(status='development'):
@@ -41,8 +42,9 @@ def create_app(status='development'):
             r"/*": {
                 "origins": "*", "allow_headers": "*", "expose_headers": "*"
             }
-        },
+        }, supports_credentials=True
     )
+    JWTManager(app)
 
     return app
 

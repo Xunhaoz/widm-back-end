@@ -302,7 +302,7 @@ def post_project_icon(project_id):
     image = request.files['image']
     icon_uuid = uuid4().hex
     icon_name = image.filename
-    icon_path = Path().cwd() / f'statics/images/{icon_uuid}.{icon_name.split(".")[-1]}'
+    icon_path = f'./statics/images/{icon_uuid}.{icon_name.split(".")[-1]}'
     image.save(icon_path)
     project.icon_path = str(icon_path)
 

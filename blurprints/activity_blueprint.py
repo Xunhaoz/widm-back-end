@@ -162,7 +162,7 @@ def patch_activity(activity_id):
     if 'sub_title' in request.json:
         activity.sub_title = request.json['sub_title']
 
-    if 'date' in request.json:
+    if 'date' in request.json and request.json['date']:
         activity.date = datetime.strptime(request.json['date'], '%Y-%m-%d')
 
     db.session.commit()
@@ -239,7 +239,7 @@ def post_activity_image(activity_id):
     image = request.files['image']
     image_uuid = uuid4().hex
     image_name = image.filename
-    image_path = Path().cwd() / f'statics/images/{image_uuid}.{image_name.split(".")[-1]}'
+    image_path = f'./statics/images/{image_uuid}.{image_name.split(".")[-1]}'
     image.save(image_path)
 
     activity_image = ActivityImage(
