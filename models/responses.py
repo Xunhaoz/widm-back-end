@@ -29,8 +29,8 @@ class Response:
     @staticmethod
     def jodit_get_all(files):
         return {
-        "success": True,
-            "time": "2024-08-06 10:06:38",
+            "success": True,
+            "time": datetime.now().strftime('%Y-%m-%d %I:%M:%S'),
             "data": {
                 "sources": [
                     {
@@ -39,6 +39,25 @@ class Response:
                         "path": "",
                         "files": files
                     }
+                ],
+                "code": 220
+            },
+            "elapsedTime": 0
+        }, 200
+
+    @staticmethod
+    def jodit_post_one(files: str):
+        return {
+            "success": True,
+            "time": datetime.now().strftime('%Y-%m-%d %I:%M:%S'),
+            "data": {
+                "baseurl": "https://widm-back-end.nevercareu.space/image/",
+                "messages": ['image uploaded'],
+                "files": [
+                    files
+                ],
+                "isImages": [
+                    True
                 ],
                 "code": 220
             },

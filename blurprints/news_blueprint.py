@@ -2,6 +2,8 @@ import os
 from uuid import uuid4
 from pathlib import Path
 
+from sqlalchemy import desc
+
 from models.news_model import db, News
 from models.responses import Response
 from utiles.api_helper import api_input_get, api_input_check
@@ -51,7 +53,8 @@ def get_newses():
       404:
         description: news not found
     """
-    news = News.query.all()
+    news = db.session.query(News)
+    news = news.order_by(desc(News.create_time)).all()
     return Response.response('get newses successfully', [n.to_dict() for n in news])
 
 

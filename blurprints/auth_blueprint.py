@@ -102,7 +102,7 @@ def return_to():
     response = make_response(redirect(current_app.config['DASH_BOARD_URL']), 200)
     set_access_cookies(response, access_token)
     set_refresh_cookies(response, refresh_token)
-    return response
+    return response, 302
 
 
 @auth_blueprint.route('/user_info', methods=['GET'])

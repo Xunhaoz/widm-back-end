@@ -30,7 +30,7 @@ class Paper(db.Model, SchemaMixin):
             'publish_year': self.publish_year,
             'origin': self.origin,
             'link': self.link,
-            'type': self.types,
+            'types': self.types,
             'paper_existed': attachment_existed,
             'create_time': self.create_time,
             'update_time': self.update_time,

@@ -9,7 +9,7 @@ from models.responses import Response
 from utiles.api_helper import api_input_get, api_input_check
 
 from flask import Blueprint, request, send_file
-from sqlalchemy.orm import joinedload
+from sqlalchemy import desc, or_
 
 paper_blueprint = Blueprint('paper', __name__)
 
@@ -48,7 +48,7 @@ def post_paper():
             link:
               example: "https://www.spaceweather.com"
               type: string
-            types:
+            type:
               example: ["type1", "type2"]
               type: array
     responses:
@@ -87,7 +87,7 @@ def post_paper():
                 link:
                   example: "https://www.spaceweather.com"
                   type: string
-                types:
+                type:
                   example: ["type1", "type2"]
                   type: array
                 attachment_existed:
@@ -103,7 +103,7 @@ def post_paper():
         description: no ['paper_publish_year', 'paper_title', 'paper_origin', 'paper_attachment', 'paper_link'] or content in form
     """
     if not api_input_check(
-            ['title', 'sub_title', 'authors', 'tags', 'publish_year', 'origin', 'link', 'types'], request.json
+            ['title', 'sub_title', 'authors', 'tags', 'publish_year', 'origin', 'link', 'type'], request.json
     ):
         return Response.client_error(
             "no ['title', 'sub_title', 'authors', 'tags', 'publish_year', 'origin', 'link', 'types'] or content in form"
@@ -194,7 +194,8 @@ def get_papers():
                     example: 'Tue, 06 Aug 2024 10:39:27 GMT'
                     type: string
     """
-    papers = Paper.query.all()
+    papers = db.session.query(Paper)
+    papers = papers.order_by(desc(Paper.create_time)).all()
     return Response.response("get papers successfully", [paper.to_dict() for paper in papers])
 
 

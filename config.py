@@ -1,16 +1,13 @@
-import logging
+import os
 
 
-class DevelopmentConfig:
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///DevelopmentConfig.db'
+class Config:
+    SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    OPENAI_KEY = os.getenv("OPENAI_KEY")
 
-    PORT = 5003
+    PORT = 5025
     HOST = '0.0.0.0'
-
-    LOGGING_FILENAME = './logs/development.log'
-    LOGGING_LEVEL = logging.DEBUG
-    LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
     SWAGGER = {
         "title": "widm-back-end",
@@ -18,47 +15,11 @@ class DevelopmentConfig:
         "version": "1.0.0",
     }
 
-    DEBUG = False
-    RESET_DB = False
+    BASIC_AUTH = os.getenv("BASIC_AUTH")
+    DASH_BOARD_URL = os.getenv("DASH_BOARD_URL")
+    HOME_PAGE_URL = os.getenv("HOME_PAGE_URL")
 
-
-class TestConfig:
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///TestConfig.db'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-    PORT = 5003
-    HOST = '0.0.0.0'
-
-    LOGGING_FILENAME = './logs/test.log'
-    LOGGING_LEVEL = logging.DEBUG
-    LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-
-    SWAGGER = {
-        "title": "widm-back-end",
-        "description": "Nation Central University WIDM LAB back-end API",
-        "version": "1.0.0",
-    }
-
-    DEBUG = False
-    RESET_DB = False
-
-
-class ProductionConfig:
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///Production.db'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-    PORT = 5003
-    HOST = '0.0.0.0'
-
-    LOGGING_FILENAME = './logs/production.log'
-    LOGGING_LEVEL = logging.DEBUG
-    LOGGING_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-
-    SWAGGER = {
-        "title": "widm-back-end",
-        "description": "Nation Central University WIDM LAB back-end API",
-        "version": "1.0.0",
-    }
-
-    DEBUG = False
-    RESET_DB = False
+    WHITE_LIST = [
+        "110502528", "110502528", "112522087", "F443693", "112522049", "112522102", "112522051", "112522092",
+        "113522140", "113522139", "113922002", "113522079", "113522152"
+    ]

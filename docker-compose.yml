@@ -1,11 +1,45 @@
-version: '1.0'
-
 services:
-  web:
+  widm-backend:
     build:
       context: .
+      dockerfile: Dockerfile
+    environment:
+      SQLALCHEMY_DATABASE_URI: mysql+pymysql://widm:widmwidm@widm-database:3306/backend
+      OPENAI_KEY:
+      BASIC_AUTH: BASIC_AUTH
+      DASH_BOARD_URL: http://dash.csie.ncu.edu.tw/
+      HOME_PAGE_URL: http://widm.csie.ncu.edu.tw/
     ports:
       - "5025:5025"
     volumes:
-      - ./instance:/app/instance
       - ./statics:/app/statics
+      - ./instance:/app/instance
+    depends_on:
+      widm-database:
+        condition: service_healthy
+
+  widm-database:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: widmwidm
+      MYSQL_DATABASE: backend
+      MYSQL_USER: widm
+      MYSQL_PASSWORD: widmwidm
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "widm", "-pwidmwidm" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  widm-phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: widm-database
+      MYSQL_ROOT_PASSWORD: widmwidm
+
+volumes:
+  mysql_data:

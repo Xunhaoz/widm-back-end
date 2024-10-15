@@ -62,7 +62,7 @@ def post_image():
     image = Image(image_name=image_name, image_path=str(image_path))
     db.session.add(image)
     db.session.commit()
-    return Response.response('post member image successfully', image.to_dict())
+    return Response.jodit_post_one(str(image.id))
 
 
 @image_blueprint.route('<image_id>', methods=['GET'])

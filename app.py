@@ -1,6 +1,5 @@
 from pathlib import Path
 import uuid
-import pymysql
 
 from blurprints.member_blueprint import member_blueprint
 from blurprints.image_blueprint import image_blueprint
@@ -20,11 +19,15 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 
-def create_app(status='development'):
+def create_app():
     app = Flask(__name__)
     app.secret_key = uuid.uuid4().hex
     app.config.from_object(Config)
     db.init_app(app)
+
+    with app.app_context():
+        db.create_all()
+        db.session.commit()
 
     app.register_blueprint(member_blueprint, url_prefix='/member')
     app.register_blueprint(image_blueprint, url_prefix='/image')
